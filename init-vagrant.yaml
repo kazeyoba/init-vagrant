@@ -1,0 +1,40 @@
+---
+- name: Configuration de la machine virtuelle
+  hosts: all
+  become: yes
+  tasks:
+    
+    - name: Créer l'utilisateur toto
+      user:
+        name: toto
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Ajouter une clé publique pour toto
+      authorized_key:
+        user: toto
+        state: present
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtQNWEfbWXjjS7nwUSmLGucqcu7Gup8Y0EVd7gQNNExmXmh9hamOnyvJq20iXEUr4JF2/0yhu9DdCqeGpgm8SXfLVv9ehvLOHKI6RHjiT0aRy04gHQemNjIKLfaSRY6E3oUd1WcBRPxKiC/5PJaA4IudfLEnQyO7jfC7p7KVZ0nNUjIU0JEbQHyFjBYGmfg61WozSPn+lxFk7OqJpvgu2JvmUlLRBvOX6TR4FrKg/lFlaKydhqXwVNom9nLed9NX7ZpylcqDHYX39AO9HeP0sgQvs1NDO2PlMCjJC/mH2KGpyyAGQ3DS61uFDVLTuqvy/fzLC/qm20ztqTdVrHwM19 timai@DESKTOP-JHJB03K"
+    
+    - name: Installer Visual Studio Code
+      shell: |
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+        mv packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+        echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list
+        apt update
+        apt install -y code
+      args:
+        creates: /usr/bin/code
+    
+    - name: Désactiver l'authentification par mot de passe dans SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+      notify: Restart SSH
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
